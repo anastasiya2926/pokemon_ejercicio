@@ -1,0 +1,115 @@
+
+let searchedPokemon = ""
+let pokemon
+let pokemons = []
+const form = document.querySelector("form")
+const alert = document.querySelector(".alert")
+const button = alert.querySelector("button")
+const pokeHolder = document.querySelector(".pokemon_card_holder")
+const loader = document.querySelector(".loader")
+const resetList = document.querySelector(".reset_list")
+
+const readLocalStorage = () => {
+    const isPokemonsSet = localStorage.getItem("pokemons") !== null
+    if (isPokemonsSet) {
+        pokemons = JSON.parse(localStorage.getItem("pokemons"))
+    }
+    renderPokemons()
+}
+
+const initFormEvents = () => {
+    form.addEventListener("submit", (ev) => {
+        ev.preventDefault()
+        const input = form.querySelector("input")
+        searchedPokemon = input.value
+        fetchPokemon()
+    })
+}
+
+
+///////////////////LOADING cuando busca pokemon pone que está cargando
+
+const fetchPokemon = async () => {
+    const url = "https://pokeapi.co/api/v2/pokemon/" + searchedPokemon
+    loader.classList.remove("hidden")
+
+/////////////////////////////////////GEOLOCALIZACIÓN -> te dice en la consola tus coordenadas
+
+    navigator.geolocation.getCurrentPosition((data) => {
+        console.log(data)
+        localStorage.setItem("last_search_coords", JSON.stringify(data))
+    })
+
+    pokemon = await fetch(url)
+        .then(s => s.json()).then(d => {
+            pokemon = d
+
+            pokemons.push(pokemon)
+            localStorage.setItem("pokemons", JSON.stringify(pokemons))
+            renderPokemons()
+            loader.classList.add("hidden")
+        })
+        .catch(() => {
+            renderError()
+            loader.classList.add("hidden")
+        })
+    
+}
+
+/////////////////////////////////////////////RENDERIZANDO LOS POKEMONS
+ //////////////// las habilidades me salían undefined: he puesto que renderice el tipo de pokemon
+
+const renderPokemons = () => {
+    let pokemonsHTML = ""
+    pokemons.forEach(pokemon => {
+        pokemonsHTML += `
+        <div class="pokemon p-4   border-solid rounded-lg drop-shadow-2xl">
+            <h3 class="font-mono font-bold bg-white rounded-lg drop-shadow-lg">${pokemon.name}</h3>
+            <picture class="bg-transparent">
+            <img src="${pokemon.sprites.front_default}" alt="${pokemon.name}">
+            </picture>
+            <ul>
+            <li>  </li>
+            <li class="font-mono font-bold"> Type: ${pokemon.types[0].type.name}  </li>
+            
+            <li></li>
+            </ul>
+        </div>
+    `
+    })
+    pokeHolder.innerHTML = pokemonsHTML
+}
+
+const renderError = () => {
+    alert.classList.remove("hidden")
+    pokeHolder.innerHTML = ""
+}
+
+const initButtonResetEvent = () => {
+    button.addEventListener("click", () => {
+        alert.classList.add("hidden")
+        form.reset()
+    })
+}
+
+const initResetListEvent = () => {
+    resetList.addEventListener("click", () => {
+        pokemons = []
+        localStorage.setItem("pokemons", JSON.stringify(pokemons))
+        renderPokemons()
+    })
+}
+
+const initPokemonController = () => {
+    readLocalStorage()
+    initFormEvents()
+    initButtonResetEvent()
+    initResetListEvent()
+}
+
+
+
+export {
+    initPokemonController,
+    resetList
+}
